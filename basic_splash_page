@@ -1,0 +1,260 @@
+import 'package:flutter/material.dart';
+import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
+
+import 'package:keicy_card_animation/keicy_card_animation.dart';
+
+import 'index.dart';
+import 'package:pavleu/Pages/App/Styles/index.dart';
+import 'package:pavleu/Pages/SplashPage/Components/fadAnimation.dart';
+import 'package:pavleu/Pages/SignupPage/signup_page.dart';
+import 'package:pavleu/Pages/App/Providers/index.dart';
+import 'package:pavleu/Pages/BottomNavbar/bottom_navbar.dart';
+
+class SplashPage extends StatefulWidget {
+  @override
+  _SplashPageState createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
+  SplashPageStyles _splashPageStyles;
+  VideoPlayerController _videoPlayerController;
+
+  AnimationController _scaleController;
+  AnimationController _scale2Controller;
+  AnimationController _widthController;
+  AnimationController _positionController;
+
+  Animation<double> _scaleAnimation;
+  Animation<double> _scale2Animation;
+  Animation<double> _widthAnimation;
+  Animation<double> _positionAnimation;
+
+  bool hideIcon = false;
+
+  bool _initState = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    _videoPlayerController = VideoPlayerController.asset(AppAssets.videoFile);
+    _videoPlayerController.initialize();
+    _videoPlayerController.setLooping(true);
+    _videoPlayerController.play();
+
+    _scaleController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(_scaleController)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _widthController.forward();
+        }
+      });
+
+    _widthController = AnimationController(vsync: this, duration: Duration(milliseconds: 600));
+
+    _widthAnimation = Tween<double>(begin: 80.0, end: 300.0).animate(_widthController)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _positionController.forward();
+        }
+      });
+
+    _positionController = AnimationController(vsync: this, duration: Duration(milliseconds: 600));
+
+    _positionAnimation = Tween<double>(begin: 0.0, end: 200.0).animate(_positionController)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            hideIcon = true;
+          });
+          _scale2Controller.forward();
+        }
+      });
+
+    _scale2Controller = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+
+    _scale2Animation = Tween<double>(begin: 1.0, end: 32.0).animate(_scale2Controller)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          if (AuthProvider.of(context).loginState == AuthState.IsLogin)
+            Navigator.pushReplacement(context, PageTransition(type: PageTransitionType.fade, child: BottomNavbar()));
+          else
+            Navigator.pushReplacement(context, PageTransition(type: PageTransitionType.fade, child: SignupPage()));
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _scale2Controller.dispose();
+    _widthController.dispose();
+    _positionController.dispose();
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _splashPageStyles = SplashPageMobileStyles(context);
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SplashPageProvider()),
+      ],
+      child: Builder(builder: (context) {
+        return _containerMain(context);
+      }),
+    );
+  }
+
+  void _init(BuildContext context) async {
+    await AuthProvider.of(context).init();
+    _initState = true;
+  }
+
+  Widget _containerMain(BuildContext context) {
+    _init(context);
+
+    print(_videoPlayerController.value.aspectRatio);
+
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Container(
+          child: Stack(
+            children: <Widget>[
+              FadeAnimation(
+                1,
+                Container(
+                  width: _splashPageStyles.deviceWidth,
+                  height: _splashPageStyles.deviceHeight,
+                  // color: Colors.white,
+                  color: Color(0xFFF9DF5A),//f9b93d   FFFAC710   fff9b93d
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: _splashPageStyles.primaryHorizontalPadding,
+                  vertical: _splashPageStyles.primaryVerticalPadding,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  //crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: FadeAnimation(
+                        1.5,
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              Image.asset(
+                                AppAssets.pavleuapp1Image,
+                                width: _splashPageStyles.deviceWidth * 0.4,
+                                fit: BoxFit.cover,
+                              ),
+                              SizedBox(height: _splashPageStyles.widthDp * 40),
+                              Container(
+                                width: _splashPageStyles.deviceWidth * 0.6,
+                                height: _splashPageStyles.deviceWidth * 0.6,
+                                child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: VideoPlayer(_videoPlayerController),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    FadeAnimation(
+                      1,
+                      Text(
+                        SplashPageString.welcomeTitle,
+                        style: TextStyle(color: Colors.black, fontSize: _splashPageStyles.titleFontSize, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    SizedBox(height: _splashPageStyles.widthDp * 15),
+                    FadeAnimation(
+                      1,
+                      Text(
+                        SplashPageString.description,
+                        style: TextStyle(
+                          color: Colors.black87,
+                          height: 1.2,
+                          fontSize: _splashPageStyles.descriptionFontSize,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(height: _splashPageStyles.widthDp * 50),
+                    FadeAnimation(
+                      1,
+                      AnimatedBuilder(
+                        animation: _scaleController,
+                        builder: (context, child) => Transform.scale(
+                          scale: _scaleAnimation.value,
+                          child: Center(
+                            child: AnimatedBuilder(
+                              animation: _widthController,
+                              builder: (context, child) => Container(
+                                width: _widthAnimation.value,
+                                height: _splashPageStyles.widthDp * 80,
+                                padding: EdgeInsets.all(_splashPageStyles.widthDp * 8),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(_splashPageStyles.widthDp * 30),
+                                  color: SplashPageColors.buttonColor,
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    if (_initState) _scaleController.forward();
+                                  },
+                                  child: Stack(children: <Widget>[
+                                    AnimatedBuilder(
+                                      animation: _positionController,
+                                      builder: (context, child) => Positioned(
+                                        left: _positionAnimation.value,
+                                        child: AnimatedBuilder(
+                                          animation: _scale2Controller,
+                                          builder: (context, child) => Transform.scale(
+                                            scale: _scale2Animation.value,
+                                            child: Container(
+                                              width: _splashPageStyles.widthDp * 60,
+                                              height: _splashPageStyles.widthDp * 60,
+                                              decoration: BoxDecoration(shape: BoxShape.circle, color: SplashPageColors.buttonColor),
+                                              child: hideIcon == false
+                                                  ? Icon(
+                                                      Icons.bubble_chart,
+                                                      color: Colors.black,
+                                                    )
+                                                  : Container(),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ]),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: _splashPageStyles.widthDp * 50),
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
